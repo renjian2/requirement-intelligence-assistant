@@ -1,0 +1,57 @@
+WEBVTT
+
+1-0
+00:00:03.120 --> 00:00:09.400
+<v Priya Shah>Okay everyone, let's start. Today we are finalising the requirements for the new expense reimbursement portal.</v>
+
+2-0
+00:00:09.400 --> 00:00:14.800
+<v Priya Shah>The goal is to cut reimbursement time and stop the paper forms.</v>
+
+3-0
+00:00:15.200 --> 00:00:24.900
+<v Rahul Mehta>From finance side, employees must submit an expense clam within 30 days of the expense date. That is decided.</v>
+
+4-0
+00:00:25.300 --> 00:00:33.000
+<v Anita Desai>Haan, theek hai, but manager approval zaroori hai for anything above 500.</v>
+
+5-0
+00:00:33.400 --> 00:00:41.700
+<v Priya Shah>Agreed. And approvals should happen quickly, people complain about delays.</v>
+
+6-0
+00:00:42.000 --> 00:00:50.500
+<v Rahul Mehta>Claims above twenty five thousand also need finance approval after the manager.</v>
+
+7-0
+00:00:51.000 --> 00:00:58.200
+<v Anita Desai>Maybe we could also send an SMS when the claim is approved.</v>
+
+8-0
+00:00:58.600 --> 00:01:06.300
+<v Priya Shah>Email notification is definitely required. SMS we can discuss later.</v>
+
+9-0
+00:01:06.800 --> 00:01:15.000
+What happens if the manager rejects it, can the employee resubmit?
+
+10-0
+00:01:15.400 --> 00:01:21.900
+<v Priya Shah>Good question. We'll figure that out later.</v>
+
+11-0
+00:01:22.300 --> 00:01:31.800
+<v Rahul Mehta>Sorry, correction. I said 30 days earlier, it should be 45 days. Finance confirmed this morning.</v>
+
+12-0
+00:01:32.200 --> 00:01:41.500
+<v Anita Desai>Receipts must be uploaded as PDF or image. And the GL code has to be selected by the employee.</v>
+
+13-0
+00:01:42.000 --> 00:01:50.100
+<v Rahul Mehta>I will share the cost centre list by Friday. Send questions to rahul.mehta@northwind.example.</v>
+
+14-0
+00:01:50.500 --> 00:01:57.000
+<v Priya Shah>Mileage claims are out of scope for phase one. Thanks everyone.</v>

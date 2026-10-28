@@ -1,0 +1,40 @@
+{
+ "domain": "Employee expense reimbursement",
+ "problem_statement": "Paper expense forms make reimbursement slow (21 days on average).",
+ "objectives": [
+  "Digitise submission, approval and payment tracking"
+ ],
+ "stakeholders": [
+  "Business Analysis Team"
+ ],
+ "actors": [
+  "Employee",
+  "Line Manager",
+  "Finance Approver"
+ ],
+ "systems": [
+  "Expense reimbursement portal",
+  "Payroll system"
+ ],
+ "modules": [
+  "Claim submission",
+  "Approval workflow",
+  "Notifications"
+ ],
+ "data_entities": [
+  "Expense claim",
+  "Expense line",
+  "Receipt",
+  "GL code"
+ ],
+ "glossary": [
+  {
+   "term": "GL code",
+   "meaning": null,
+   "defined_in_source": false
+  }
+ ],
+ "undefined_acronyms": [
+  "GL"
+ ]
+}

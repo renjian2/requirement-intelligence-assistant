@@ -1,0 +1,32 @@
+{
+  "description": "Issues deliberately planted in the synthetic Northwind sample documents. Used by eval/run_eval.py (Phase 5) to measure recall. Sources are referenced by file name and a quote fragment, not by segment ID, so the list stays valid if document numbering changes.",
+  "findings": [
+    {"id": "P01", "type": "CONTRADICTION", "severity": "HIGH", "summary": "Claim submission window differs: 45 days (transcript, after correction) vs 60 days (BRD) vs 90 days (policy).",
+     "sources": [["expense_portal_meeting.vtt", "it should be 45 days"], ["expense_portal_brd.docx", "within 60 days"], ["travel_expense_policy.pdf", "older than 90 days"]]},
+    {"id": "P02", "type": "CONTRADICTION", "severity": "HIGH", "summary": "Manager approval threshold: above 500 (transcript) vs above INR 1,000 (BRD) vs all claims (policy).",
+     "sources": [["expense_portal_meeting.vtt", "anything above 500"], ["expense_portal_brd.docx", "above INR 1,000"], ["travel_expense_policy.pdf", "All claims require approval"]]},
+    {"id": "P03", "type": "POSSIBLE_TRANSCRIPTION_ERROR", "severity": "LOW", "summary": "'expense clam' probably means 'expense claim'.",
+     "sources": [["expense_portal_meeting.vtt", "expense clam"]]},
+    {"id": "P04", "type": "AMBIGUITY", "severity": "MEDIUM", "summary": "'Approvals should happen quickly' has no measurable SLA.",
+     "sources": [["expense_portal_meeting.vtt", "happen quickly"]]},
+    {"id": "P05", "type": "AMBIGUITY", "severity": "LOW", "summary": "'User-friendly' and 'load fast' are not measurable.",
+     "sources": [["expense_portal_brd.docx", "user-friendly"], ["expense_portal_brd.docx", "load fast"]]},
+    {"id": "P06", "type": "GAP", "severity": "HIGH", "summary": "Rejection and resubmission flow is undefined.",
+     "sources": [["expense_portal_meeting.vtt", "can the employee resubmit"]]},
+    {"id": "P07", "type": "UNDEFINED_TERM", "severity": "MEDIUM", "summary": "'GL code' is never defined, and its source list is not specified.",
+     "sources": [["expense_portal_meeting.vtt", "GL code"], ["expense_portal_brd.docx", "GL code"]]},
+    {"id": "P08", "type": "SCOPE_ISSUE", "severity": "LOW", "summary": "SMS notification was only proposed, not decided. It must not become a confirmed requirement.",
+     "sources": [["expense_portal_meeting.vtt", "Maybe we could also send an SMS"]]},
+    {"id": "P09", "type": "AMBIGUITY", "severity": "MEDIUM", "summary": "Threshold '500' has no currency; the receipt rule says 'original receipts' (policy) vs upload as PDF/image (transcript).",
+     "sources": [["expense_portal_meeting.vtt", "anything above 500"], ["travel_expense_policy.pdf", "Original receipts are required"]]},
+    {"id": "P10", "type": "GAP", "severity": "MEDIUM", "summary": "Payroll/payment integration is still to be confirmed. The policy says claims are paid with monthly payroll.",
+     "sources": [["expense_portal_brd.docx", "Payment integration with the payroll system"], ["travel_expense_policy.pdf", "next monthly payroll cycle"]]},
+    {"id": "P11", "type": "UNKNOWN_SPEAKER", "severity": "LOW", "summary": "The resubmission question has no speaker.",
+     "sources": [["expense_portal_meeting.vtt", "can the employee resubmit"]]}
+  ],
+  "must_not_happen": [
+    "SMS notification marked as STATED or approved without human action",
+    "30-day window used as final without noting the later correction to 45 days",
+    "Currency or SLA values invented for '500' or 'quickly'"
+  ]
+}

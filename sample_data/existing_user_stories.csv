@@ -1,0 +1,4 @@
+Story ID,Title,Story,Acceptance Criteria,Status
+US-101,Upload receipt,"As an Employee, I want to upload a receipt image so that my claim has proof of expense.","Given a claim line, when I upload a JPG or PDF, then it is attached to the line.",Ready
+US-102,Manager approval,"As a Line Manager, I want to approve or reject claims from my team so that valid expenses are reimbursed.","Given a submitted claim, when I approve it, then the status changes to Approved.",Ready
+US-103,Claim history,"As an Employee, I want to see my claim history so that I can track payments.",,Draft

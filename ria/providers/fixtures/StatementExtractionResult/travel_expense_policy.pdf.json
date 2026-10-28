@@ -1,0 +1,20 @@
+{
+  "chunk_id": "{{CHUNK_ID}}",
+  "statements": [
+    {"local_key": "p1", "statement_type": "BUSINESS_RULE", "text": "Expense claims older than 90 days from the expense date are not reimbursed.",
+     "evidence_status": "STATED", "segment_ids": ["S0002"],
+     "evidence_quote": "Expense claims older than 90 days from the expense date will not be reimbursed.", "is_ai_suggestion": false},
+    {"local_key": "p2", "statement_type": "BUSINESS_RULE", "text": "Original receipts are required for any single expense above INR 500.",
+     "evidence_status": "STATED", "segment_ids": ["S0003"],
+     "evidence_quote": "Original receipts are required for any single expense above INR 500.", "is_ai_suggestion": false},
+    {"local_key": "p3", "statement_type": "BUSINESS_RULE", "text": "All claims require line manager approval before payment.",
+     "evidence_status": "STATED", "segment_ids": ["S0007"],
+     "evidence_quote": "All claims require approval from the employee's line manager before payment.", "is_ai_suggestion": false},
+    {"local_key": "p4", "statement_type": "BUSINESS_RULE", "text": "Claims above INR 25,000 additionally require Finance approval.",
+     "evidence_status": "STATED", "segment_ids": ["S0008"],
+     "evidence_quote": "Claims above INR 25,000 additionally require approval from Finance.", "is_ai_suggestion": false},
+    {"local_key": "p5", "statement_type": "CONSTRAINT", "text": "Approved claims are paid with the next monthly payroll cycle.",
+     "evidence_status": "STATED", "segment_ids": ["S0009"],
+     "evidence_quote": "Approved claims are paid with the next monthly payroll cycle.", "is_ai_suggestion": false}
+  ]
+}

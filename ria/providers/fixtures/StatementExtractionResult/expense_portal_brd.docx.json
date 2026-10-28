@@ -1,0 +1,93 @@
+{
+ "chunk_id": "{{CHUNK_ID}}",
+ "statements": [
+  {
+   "local_key": "b1",
+   "statement_type": "BUSINESS_RULE",
+   "text": "Employees must submit a claim within 60 days of the expense date.",
+   "evidence_status": "STATED",
+   "segment_ids": [
+    "S0010"
+   ],
+   "evidence_quote": "Employees must submit a claim within 60 days of the expense date.",
+   "is_ai_suggestion": false
+  },
+  {
+   "local_key": "b2",
+   "statement_type": "BUSINESS_RULE",
+   "text": "Claims above INR 1,000 require Line Manager approval.",
+   "evidence_status": "STATED",
+   "segment_ids": [
+    "S0012"
+   ],
+   "evidence_quote": "Claims above INR 1,000 require Line Manager approval.",
+   "is_ai_suggestion": false
+  },
+  {
+   "local_key": "b3",
+   "statement_type": "REQUIREMENT_CANDIDATE",
+   "text": "The employee receives an email when a claim is approved or rejected.",
+   "evidence_status": "STATED",
+   "segment_ids": [
+    "S0014"
+   ],
+   "evidence_quote": "The employee receives an email when a claim is approved or rejected.",
+   "is_ai_suggestion": false
+  },
+  {
+   "local_key": "b4",
+   "statement_type": "REQUIREMENT_CANDIDATE",
+   "text": "The system should be user-friendly (not measurable).",
+   "evidence_status": "AMBIGUOUS",
+   "segment_ids": [
+    "S0016"
+   ],
+   "evidence_quote": "The system should be user-friendly.",
+   "is_ai_suggestion": false
+  },
+  {
+   "local_key": "b5",
+   "statement_type": "REQUIREMENT_CANDIDATE",
+   "text": "The portal should load fast (no measurable target).",
+   "evidence_status": "AMBIGUOUS",
+   "segment_ids": [
+    "S0017"
+   ],
+   "evidence_quote": "The portal should load fast",
+   "is_ai_suggestion": false
+  },
+  {
+   "local_key": "b6",
+   "statement_type": "OPEN_QUESTION",
+   "text": "Is payment integration with the payroll system in scope? It is still to be confirmed.",
+   "evidence_status": "STATED",
+   "segment_ids": [
+    "S0019"
+   ],
+   "evidence_quote": "Payment integration with the payroll system is to be confirmed.",
+   "is_ai_suggestion": false
+  },
+  {
+   "local_key": "b7",
+   "statement_type": "BUSINESS_RULE",
+   "text": "Claims above INR 25,000 require Finance Approver approval after the Line Manager.",
+   "evidence_status": "STATED",
+   "segment_ids": [
+    "S0013"
+   ],
+   "evidence_quote": "Claims above INR 25,000 require Finance Approver approval after the Line Manager.",
+   "is_ai_suggestion": false
+  },
+  {
+   "local_key": "b8",
+   "statement_type": "REQUIREMENT_CANDIDATE",
+   "text": "All approval actions must be recorded in an audit trail.",
+   "evidence_status": "STATED",
+   "segment_ids": [
+    "S0018"
+   ],
+   "evidence_quote": "All approval actions must be recorded in an audit trail.",
+   "is_ai_suggestion": false
+  }
+ ]
+}

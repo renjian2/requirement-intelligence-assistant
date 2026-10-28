@@ -1,0 +1,14 @@
+{
+  "domain": "Employee expense reimbursement",
+  "problem_statement": "Reimbursement is slow and depends on paper forms.",
+  "objectives": ["Cut reimbursement time", "Stop paper expense forms"],
+  "stakeholders": ["Finance", "Managers", "Employees"],
+  "actors": ["Employee", "Manager", "Finance"],
+  "systems": ["Expense reimbursement portal"],
+  "modules": ["Claim submission", "Approval workflow", "Notifications", "Receipts"],
+  "data_entities": ["Expense claim", "Receipt", "GL code", "Cost centre"],
+  "glossary": [
+    {"term": "GL code", "meaning": null, "defined_in_source": false}
+  ],
+  "undefined_acronyms": ["GL"]
+}
