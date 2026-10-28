@@ -93,6 +93,7 @@ class MockProvider(LLMProvider):
                                note=f"{DEMO_BANNER}. AI issue review is skipped in demo mode – rule checks only.")
         path = self._fixture_path(schema, meta)
         note = DEMO_BANNER
+        is_context_only = bool(meta.file_name and "existing_user_stories" in meta.file_name)
         if path is not None:
             raw = json.dumps(self._filter_to_chunk(json.loads(self._load(path, meta)),
                                                    meta.citable_segment_ids, messages[-1].content if messages else ""))
@@ -100,6 +101,28 @@ class MockProvider(LLMProvider):
                 parsed = schema.model_validate_json(raw)
             except ValidationError as exc:
                 raise ProviderError(f"Demo fixture {path.name} does not match {schema.__name__}: {exc}") from exc
+        elif not is_context_only:
+            if schema.__name__ == "StatementExtractionResult" and messages:
+                raw = json.dumps(_demo_extract_statements(messages[-1].content, meta.citable_segment_ids, meta.chunk_id))
+                parsed = schema.model_validate_json(raw)
+                note = f"{DEMO_BANNER}. Generated rule-based test statements from document text."
+            elif schema.__name__ == "DocumentUnderstanding":
+                doc_name = meta.file_name or "document"
+                raw = json.dumps({
+                    "executive_summary": f"Overview of {doc_name}: business requirements, operational rules and workflow specifications.",
+                    "actors": ["User", "Manager", "Approver", "System"],
+                    "modules": ["General", "Operations", "Compliance"],
+                    "glossary": [],
+                    "data_entities": ["Record", "Transaction", "AuditLog"],
+                    "undefined_acronyms": [],
+                })
+                parsed = schema.model_validate_json(raw)
+                note = f"{DEMO_BANNER}. Generated demo document understanding."
+            else:
+                defaults = {"chunk_id": meta.chunk_id} if "chunk_id" in schema.model_fields else {}
+                parsed = schema.model_validate(defaults)
+                raw = parsed.model_dump_json()
+                note = f"{DEMO_BANNER}. No demo fixture for this document - empty result returned."
         else:
             defaults = {"chunk_id": meta.chunk_id} if "chunk_id" in schema.model_fields else {}
             parsed = schema.model_validate(defaults)
@@ -220,6 +243,40 @@ def short_title(capability: str, words: int = 5) -> str:
     parts = capability.strip().rstrip(".").split()
     title = " ".join(parts[:words]) + ("…" if len(parts) > words else "")
     return title[:1].upper() + title[1:]
+
+
+def _demo_extract_statements(prompt: str, citable: tuple[str, ...], chunk_id: str = "") -> dict:
+    """Extract synthetic statements from chunk segment text for non-fixture documents (demo mode)."""
+    body = prompt.rsplit("<source_segments>", 1)[-1].split("</source_segments>", 1)[0] if "<source_segments>" in prompt else "[]"
+    try:
+        segments = json.loads(body.strip() or "[]")
+    except Exception:
+        segments = []
+    statements = []
+    citable_set = set(citable)
+    for seg in segments:
+        sid = seg.get("id")
+        if citable_set and sid not in citable_set:
+            continue
+        text = (seg.get("text") or "").strip()
+        if not text:
+            continue
+        sentences = [s.strip() for s in re.split(r"(?<=[.!?\n])\s+", text) if len(s.strip()) > 15]
+        if not sentences:
+            sentences = [text[:150]]
+        for s in sentences[:2]:
+            key = f"s{len(statements) + 1}"
+            st_type = "BUSINESS_RULE" if any(w in s.lower() for w in ("rule", "policy", "must", "shall", "cannot", "limit")) else "REQUIREMENT_CANDIDATE"
+            statements.append({
+                "local_key": key,
+                "statement_type": st_type,
+                "text": s,
+                "evidence_status": "STATED",
+                "segment_ids": [sid],
+                "evidence_quote": s[:120],
+                "speaker": seg.get("speaker"),
+            })
+    return {"chunk_id": chunk_id or "C01", "statements": statements}
 
 
 def fixture_files() -> list[Path]:

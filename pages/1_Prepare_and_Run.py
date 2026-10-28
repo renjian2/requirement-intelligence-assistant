@@ -126,15 +126,25 @@ changes = documents_changed(repo, sid, latest)
 if changes:
     st.warning("Documents changed since the last analysis (" + "; ".join(changes[:4]) + ") – run again.", icon="🔄")
 
-if st.button("⚡ Run Complete AI Analysis", type="primary", use_container_width=True,
-             disabled=bool(problems) or not consent or not usable or not info.configured):
+col_run, col_demo = st.columns([3, 2])
+run_live = col_run.button("⚡ Run Complete AI Analysis", type="primary", use_container_width=True,
+                          disabled=bool(problems) or not consent or not usable or not info.configured,
+                          help=f"Execute live AI pipeline with {info.label}")
+run_demo = col_demo.button("🧪 Test AI (Demo · 0 Tokens)", type="secondary", use_container_width=True,
+                           disabled=bool(problems) or not usable,
+                           help="Run instant offline simulation using 0 tokens. Perfect for testing and demos.")
+
+if run_live or run_demo:
+    use_mock = bool(run_demo)
     service.confirm_all(sid)
     bar = st.progress(0.0, text="Starting…")
     try:
-        provider = create_provider(info.name, settings)
+        from ria.providers.mock import MockProvider
+        provider = MockProvider() if use_mock else create_provider(info.name, settings)
+        is_external = info.sends_data_externally if not use_mock else False
         run = AnalysisOrchestrator(repo, settings, provider).run(
-            sid, RunOptions(mode, depth, redact=info.sends_data_externally,
-                            redact_names=info.sends_data_externally, use_cache=True, find_issues=True,
+            sid, RunOptions(mode, depth, redact=is_external,
+                            redact_names=is_external, use_cache=True, find_issues=True,
                             generate_stories=True, max_tests_per_story=st.session_state["adv_tests"]),
             lambda msg, frac: bar.progress(min(max(frac, 0.0), 1.0), text=msg))
     except (ProviderError, ValueError) as exc:
@@ -152,7 +162,8 @@ if last:
     elif last.status == RunStatus.COMPLETED_WITH_ERRORS:
         st.warning(f"Last run completed with {s.failed_calls} failed call(s). Run again – successful calls are cached.")
     else:
-        st.success(f"Analysis complete · {last.created_at:%d %b %H:%M}")
+        demo_tag = " · 🧪 Test / Demo Mode (0 Tokens)" if last.is_demo else ""
+        st.success(f"Analysis complete{demo_tag} · {last.created_at:%d %b %H:%M}")
     m = st.columns(4)
     m[0].metric("Requirements", s.requirements)
     m[1].metric("Issues found", s.findings)
