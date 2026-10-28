@@ -205,9 +205,9 @@ with st.expander("⚙️ Advanced settings"):
              else f"{infos[n].label} – not configured ({', '.join(infos[n].missing)} missing)")
     if info.name == ProviderName.GROK:
         groq_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
-        curr_m = st.session_state.get("adv_model", settings.xai_model)
-        idx = groq_models.index(curr_m) if curr_m in groq_models else 0
-        st.selectbox("Groq Model", groq_models, index=idx, key="adv_model",
+        if "adv_model" not in st.session_state:
+            st.session_state["adv_model"] = settings.xai_model if settings.xai_model in groq_models else groq_models[0]
+        st.selectbox("Groq Model", groq_models, key="adv_model",
                      help="If openai/gpt-oss-120b daily quota (200k tokens) is exhausted, switch to openai/gpt-oss-20b which has a separate 200,000 token daily quota.")
     st.caption(info.notes + ("" if real else " Configure Grok, Ollama or an OpenAI-compatible endpoint in .env to "
                                              "analyse your own documents."))
