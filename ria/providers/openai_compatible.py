@@ -20,14 +20,15 @@ class OpenAICompatibleProvider(HttpProvider):
         prompt_chars = sum(len(m.get("content", "")) for m in messages)
         est_prompt_tokens = prompt_chars // 4
 
-        # For providers with a token-per-minute ceiling (e.g. Groq free tier with 8,000 TPM and 1,000 OTPM),
-        # requesting large completion tokens causes Groq to reject the call with HTTP 413 / 429
-        # because (prompt_tokens + max_completion_tokens) exceeds TPM or max_completion_tokens exceeds OTPM limit.
-        # RIA structured outputs (statements, requirements, findings, stories, tests) need at most
-        # 600 - 950 completion tokens. We safely budget max_completion_tokens to never exceed the ceiling.
+        # For providers with a token-per-minute ceiling (e.g. Groq free tier with 8,000 TPM):
+        # We need enough tokens to output statements (up to 1,500 tokens) and user stories (up to 2,500 tokens)
+        # without truncating the JSON output.
         is_groq = "groq.com" in self.base_url or self._api_key.startswith("gsk_")
-        if is_groq:
+        is_qwen = "qwen" in self.model.lower()
+        if is_groq and is_qwen:
             safe_budget = max(500, min(1000, 5200 - est_prompt_tokens))
+        elif is_groq:
+            safe_budget = max(1000, min(2500, 6000 - est_prompt_tokens))
         else:
             safe_budget = max(1200, min(3000, 7500 - est_prompt_tokens))
 

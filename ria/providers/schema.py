@@ -100,12 +100,34 @@ _FENCE = re.compile(r"^\s*```(?:json)?\s*|\s*```\s*$", re.I)
 
 
 def extract_json(text: str) -> Any:
-    """Parse JSON from model output, tolerating code fences and surrounding prose."""
+    """Parse JSON from model output, tolerating code fences, surrounding prose, and truncation."""
     cleaned = _FENCE.sub("", text.strip())
     try:
         return json.loads(cleaned)
     except json.JSONDecodeError:
         start, end = cleaned.find("{"), cleaned.rfind("}")
         if start != -1 and end > start:
-            return json.loads(cleaned[start:end + 1])
+            try:
+                return json.loads(cleaned[start:end + 1])
+            except json.JSONDecodeError:
+                pass
+        repaired = _repair_truncated_json(cleaned[start:] if start != -1 else cleaned)
+        if repaired is not None:
+            return repaired
         raise
+
+
+def _repair_truncated_json(s: str) -> Any | None:
+    """Attempt to recover valid JSON from an output cut off mid-stream by token limit."""
+    for cut in range(len(s) - 1, max(0, len(s) - 2000), -1):
+        if s[cut] in ("}", "]"):
+            candidate = s[:cut + 1].rstrip()
+            open_curly = candidate.count("{") - candidate.count("}")
+            open_square = candidate.count("[") - candidate.count("]")
+            if open_curly >= 0 and open_square >= 0:
+                closing = ("]" * open_square) + ("}" * open_curly)
+                try:
+                    return json.loads(candidate + closing)
+                except Exception:
+                    continue
+    return None
