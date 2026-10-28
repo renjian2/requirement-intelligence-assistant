@@ -161,6 +161,8 @@ if last:
         st.error("Last run failed: " + "; ".join(s.errors[:3]))
     elif last.status == RunStatus.COMPLETED_WITH_ERRORS:
         st.warning(f"Last run completed with {s.failed_calls} failed call(s). Run again – successful calls are cached.")
+        for err in s.errors[:2]:
+            st.caption(f"⚠️ {err}")
     else:
         demo_tag = " · 🧪 Test / Demo Mode (0 Tokens)" if last.is_demo else ""
         st.success(f"Analysis complete{demo_tag} · {last.created_at:%d %b %H:%M}")
