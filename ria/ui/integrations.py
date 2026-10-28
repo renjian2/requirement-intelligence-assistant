@@ -44,12 +44,36 @@ def render_outlook_panel(repo, session_id: str, run, key: str = "mail", requirem
         st.info("There are no open conflicting requirements – the draft says no action is required.")
     eml = to_eml(draft)
     name = safe_filename(f"RIA_clarifications_{session['name']}")
-    if st.button("🚀 Open Directly in Outlook", key=f"{key}_open", type="primary", use_container_width=True):
-        ok, message, path = open_in_outlook(eml, get_settings().data_dir / "drafts", name, draft=draft)
-        (st.success if ok else st.warning)(f"{message}  \nSaved: `{path}`")
-        repo.log(session_id, "INFO" if ok else "WARNING", "email", f"Outlook draft {'opened' if ok else 'saved'}: {path.name}")
-        log.info("Clarification email: %d conflict(s), opened=%s", len(draft.conflicts),
-                 ok, extra=ctx(session_id, run.run_id))
+
+    import urllib.parse
+    to_param = ";".join(draft.to_addresses) if draft.to_addresses else ""
+    subj_param = urllib.parse.quote(draft.subject)
+    body_param = urllib.parse.quote(draft.text_body)
+    mailto_url = f"mailto:{to_param}?subject={subj_param}&body={body_param}"
+    owa_url = f"https://outlook.office.com/mail/deeplink/compose?to={urllib.parse.quote(to_param)}&subject={subj_param}&body={body_param}"
+
+    col_btn1, col_btn2 = st.columns([1.5, 1.5])
+    with col_btn1:
+        if st.button("🚀 Open Directly in Outlook", key=f"{key}_open", type="primary", use_container_width=True):
+            ok, message, path = open_in_outlook(eml, get_settings().data_dir / "drafts", name, draft=draft)
+            if ok:
+                st.success(f"{message}  \nSaved: `{path}`")
+            else:
+                st.info(message)
+            repo.log(session_id, "INFO" if ok else "WARNING", "email", f"Outlook draft {'opened' if ok else 'saved'}: {path.name}")
+            log.info("Clarification email: %d conflict(s), opened=%s", len(draft.conflicts),
+                     ok, extra=ctx(session_id, run.run_id))
+    with col_btn2:
+        st.download_button("📥 Download .eml Draft (Open in Outlook)", data=eml, file_name=f"{name}.eml",
+                           mime="message/rfc822", use_container_width=True, key=f"{key}_dl",
+                           help="Download the editable .eml draft file. Double-clicking it opens directly in Outlook with full HTML tables.")
+
+    with st.expander("🌐 Cloud / Web Email Options (Outlook Web & mailto)"):
+        w1, w2 = st.columns(2)
+        with w1:
+            st.link_button("🚀 Open in Desktop Email (mailto:)", mailto_url, use_container_width=True)
+        with w2:
+            st.link_button("🌐 Open in Outlook for Web (Office 365)", owa_url, use_container_width=True)
     t_html, t_text = st.tabs(["Email preview (as Outlook shows it)", "Plain text"])
     with t_html:
         import streamlit.components.v1 as components   # isolated frame: app CSS cannot change the preview

@@ -358,12 +358,16 @@ def open_in_outlook(eml: bytes, folder: Path, name: str = "", draft: EmailDraft 
             except OSError as exc:
                 errors.append(f"default app: {exc}")
     else:
+        import shutil
         opener = "open" if sys.platform == "darwin" else "xdg-open"
-        try:
-            subprocess.Popen([opener, str(path)])  # noqa: S603
-            return True, "Draft opened in your default mail app. Review it and click Send.", path
-        except OSError as exc:
-            errors.append(f"{opener}: {exc}")
+        if shutil.which(opener):
+            try:
+                subprocess.Popen([opener, str(path)])  # noqa: S603
+                return True, "Draft opened in your default mail app. Review it and click Send.", path
+            except OSError as exc:
+                errors.append(f"{opener}: {exc}")
+        else:
+            errors.append("server running in cloud / container environment")
     log.warning("Could not open mail app: %s", "; ".join(errors))
-    return False, ("Could not open the mail app (" + "; ".join(errors) + "). Use 'Download .eml File' and "
-                   "open it in Outlook."), path
+    return False, ("The application is running on a cloud server where desktop Outlook cannot be launched directly. "
+                   "Please click **'📥 Download .eml Draft'** to open in your local Outlook, or use **'🌐 Cloud / Web Email Options'** below."), path
