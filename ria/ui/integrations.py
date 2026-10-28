@@ -67,7 +67,7 @@ def render_outlook_panel(repo, session_id: str, run, key: str = "mail", requirem
             key=f"{key}_open",
             help="Opens the draft directly in Outlook with full HTML formatting, pre-filled recipients, and conflicting requirements table."
         )
-        st.caption("*(Click the downloaded draft to open it directly in Microsoft Outlook with full HTML formatting)*")
+        st.caption("*(Opens in Microsoft Outlook with full HTML formatting. **Tip:** In Chrome/Edge, right-click the download and choose **'Always open files of this type'** to auto-launch Outlook on click!)*")
     t_html, t_text = st.tabs(["Email preview (as Outlook shows it)", "Plain text"])
     with t_html:
         import streamlit.components.v1 as components   # isolated frame: app CSS cannot change the preview
