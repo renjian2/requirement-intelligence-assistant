@@ -164,23 +164,28 @@ class HttpProvider(LLMProvider):
             if is_rate_limit:
                 last_error = f"HTTP {resp.status_code}: {body}"
                 if attempt < MAX_RETRIES:
+                    # If provider asks to reduce output tokens / max_tokens / OTPM limit:
+                    # e.g., "output tokens per minute (OTPM): Limit 1000, Requested 1600. reduce max_tokens"
+                    if any(k in body_l for k in ("otpm", "reduce max_tokens", "output tokens")):
+                        m_lim = re.search(r"limit\s*(\d+)", body_l)
+                        if m_lim:
+                            new_max = max(300, min(int(m_lim.group(1)) - 50, 950))
+                            log.warning("%s: reducing output tokens to %d to meet provider OTPM limit and retrying immediately",
+                                        self.name, new_max)
+                            if "max_completion_tokens" in payload:
+                                payload["max_completion_tokens"] = new_max
+                            if "max_tokens" in payload:
+                                payload["max_tokens"] = new_max
+                            self._sleep(1.0)
+                            continue
+
                     wait = rate_limit_wait(resp)
                     backoff_s = wait if (wait is not None and wait >= 1.0) else min(2 ** (attempt + 1), 30)
                     log.warning("%s: HTTP %d (rate limit/TPM), retry %d/%d after %.1f s", self.name, resp.status_code,
                                 attempt + 1, MAX_RETRIES, backoff_s)
                     if wait is not None and wait > 90:
-                        # For Groq, daily quota (200k TPD) is tracked per-model.
-                        # If gpt-oss-120b daily quota is exhausted, seamlessly fallback to qwen/qwen3.8-27b
-                        if ("groq.com" in self.base_url or self._api_key.startswith("gsk_")):
-                            fallback = "qwen/qwen3.8-27b" if "gpt-oss" in self.model.lower() else "openai/gpt-oss-20b"
-                            if self.model != fallback:
-                                log.warning("Groq model %s daily quota reached (wait %ds) – seamlessly switching to %s with fresh quota",
-                                            self.model, int(wait), fallback)
-                                self.model = fallback
-                                payload["model"] = fallback
-                                continue
-                        raise ProviderError(f"{self.name}: rate limit reached – the provider asks to wait "
-                                            f"{wait:,.0f}s, usually a daily quota. Try later; cached calls are free.",
+                        raise ProviderError(f"{self.name}: rate limit reached for model '{self.model}' – provider asks to wait "
+                                            f"{wait:,.0f}s (usually a daily quota limit). Wait for quota reset, or use 🧪 Test AI (Demo) which runs instantly with 0 tokens.",
                                             retryable=True)
                     self._sleep(backoff_s)
                     continue
