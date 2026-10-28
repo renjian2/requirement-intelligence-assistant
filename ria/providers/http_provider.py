@@ -176,6 +176,16 @@ class HttpProvider(LLMProvider):
                     log.warning("%s: HTTP %d (rate limit/TPM), retry %d/%d after %.1f s", self.name, resp.status_code,
                                 attempt + 1, MAX_RETRIES, backoff_s)
                     if wait is not None and wait > 90:
+                        # For Groq, daily quota (200k TPD) is tracked per-model.
+                        # If gpt-oss-120b daily quota is exhausted, seamlessly fallback to qwen/qwen3.8-27b
+                        if ("groq.com" in self.base_url or self._api_key.startswith("gsk_")):
+                            fallback = "qwen/qwen3.8-27b" if "gpt-oss" in self.model.lower() else "openai/gpt-oss-20b"
+                            if self.model != fallback:
+                                log.warning("Groq model %s daily quota reached (wait %ds) – seamlessly switching to %s with fresh quota",
+                                            self.model, int(wait), fallback)
+                                self.model = fallback
+                                payload["model"] = fallback
+                                continue
                         raise ProviderError(f"{self.name}: rate limit reached – the provider asks to wait "
                                             f"{wait:,.0f}s, usually a daily quota. Try later; cached calls are free.",
                                             retryable=True)
