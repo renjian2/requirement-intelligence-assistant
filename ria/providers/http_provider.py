@@ -152,17 +152,10 @@ class HttpProvider(LLMProvider):
                                          f"Check the base URL and model name. {body}")
 
             # Check if this is a TPM (Tokens Per Minute) / rate limit error
-            is_tpm_error = any(k in body_l for k in ("tpm", "tokens per minute", "rate_limit_exceeded"))
             is_rate_limit = (resp.status_code == 429 or resp.status_code >= 500 or
-                             (resp.status_code in (400, 413, 422) and is_tpm_error))
-
-            # If it's a TPM limit, check if the single request itself exceeded the total limit:
-            # e.g., "Limit 8000, Requested 9500" -> request can never fit without splitting / chunk reduction
-            m_tpm = re.search(r"limit\s*(\d+).*?requested\s*(\d+)", body_l)
-            if m_tpm:
-                limit_val, req_val = int(m_tpm.group(1)), int(m_tpm.group(2))
-                if req_val > limit_val:
-                    raise ContextTooLongError(f"Request ({req_val} tokens) exceeds provider throughput ceiling ({limit_val} TPM).")
+                             (resp.status_code in (400, 413, 422) and any(k in body_l for k in (
+                                 "tpm", "tpd", "tokens per minute", "tokens per day", "rate_limit", "rate limit"
+                             ))))
 
             # True context window error (model context window exceeded, not per-minute rate limit)
             if not is_rate_limit and resp.status_code in (400, 413, 422) and any(h in body_l for h in _CONTEXT_HINTS):
@@ -171,7 +164,7 @@ class HttpProvider(LLMProvider):
             if is_rate_limit:
                 last_error = f"HTTP {resp.status_code}: {body}"
                 if attempt < MAX_RETRIES:
-                    wait = rate_limit_wait(resp) if (resp.status_code in (429, 413) or is_tpm_error) else None
+                    wait = rate_limit_wait(resp)
                     backoff_s = wait if (wait is not None and wait >= 1.0) else min(2 ** (attempt + 1), 30)
                     log.warning("%s: HTTP %d (rate limit/TPM), retry %d/%d after %.1f s", self.name, resp.status_code,
                                 attempt + 1, MAX_RETRIES, backoff_s)

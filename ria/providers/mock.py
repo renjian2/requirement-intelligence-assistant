@@ -102,11 +102,18 @@ class MockProvider(LLMProvider):
             except ValidationError as exc:
                 raise ProviderError(f"Demo fixture {path.name} does not match {schema.__name__}: {exc}") from exc
         elif not is_context_only:
-            if schema.__name__ == "StatementExtractionResult" and messages:
-                raw = json.dumps(_demo_extract_statements(messages[-1].content, meta.citable_segment_ids, meta.chunk_id))
-                parsed = schema.model_validate_json(raw)
-                note = f"{DEMO_BANNER}. Generated rule-based test statements from document text."
-            elif schema.__name__ == "DocumentUnderstanding":
+            if schema.__name__ == "StatementExtractionResult" and messages and "<source_segments>" in messages[-1].content:
+                extracted = _demo_extract_statements(messages[-1].content, meta.citable_segment_ids, meta.chunk_id)
+                if extracted.get("statements"):
+                    raw = json.dumps(extracted)
+                    parsed = schema.model_validate_json(raw)
+                    note = f"{DEMO_BANNER}. Generated rule-based test statements from document text."
+                else:
+                    defaults = {"chunk_id": meta.chunk_id} if "chunk_id" in schema.model_fields else {}
+                    parsed = schema.model_validate(defaults)
+                    raw = parsed.model_dump_json()
+                    note = f"{DEMO_BANNER}. No demo fixture for this document - empty result returned."
+            elif schema.__name__ == "DocumentUnderstanding" and messages and any("<document" in m.content for m in messages):
                 doc_name = meta.file_name or "document"
                 raw = json.dumps({
                     "executive_summary": f"Overview of {doc_name}: business requirements, operational rules and workflow specifications.",
