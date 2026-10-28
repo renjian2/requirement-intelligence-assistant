@@ -139,10 +139,14 @@ if run_live or run_demo:
     service.confirm_all(sid)
     bar = st.progress(0.0, text="Starting…")
     try:
+        from dataclasses import replace
         from ria.providers.mock import MockProvider
-        provider = MockProvider() if use_mock else create_provider(info.name, settings)
+        active_settings = settings
+        if not use_mock and info.name == ProviderName.GROK and st.session_state.get("adv_model"):
+            active_settings = replace(settings, xai_model=st.session_state["adv_model"])
+        provider = MockProvider() if use_mock else create_provider(info.name, active_settings)
         is_external = info.sends_data_externally if not use_mock else False
-        run = AnalysisOrchestrator(repo, settings, provider).run(
+        run = AnalysisOrchestrator(repo, active_settings, provider).run(
             sid, RunOptions(mode, depth, redact=is_external,
                             redact_names=is_external, use_cache=True, find_issues=True,
                             generate_stories=True, max_tests_per_story=st.session_state["adv_tests"]),
@@ -163,6 +167,24 @@ if last:
         st.warning(f"Last run completed with {s.failed_calls} failed call(s). Run again – successful calls are cached.")
         for err in s.errors[:2]:
             st.caption(f"⚠️ {err}")
+        if any("openai/gpt-oss-120b" in e for e in s.errors):
+            st.info("💡 **Daily quota for `openai/gpt-oss-120b` (200k tokens) is reached.** You can finish your analysis instantly with `openai/gpt-oss-20b` (which has a fresh 200,000 daily token allowance) or with Test AI (0 tokens).")
+            if st.button("🚀 Switch to openai/gpt-oss-20b & Finish Analysis", type="primary", use_container_width=True):
+                st.session_state["adv_model"] = "openai/gpt-oss-20b"
+                service.confirm_all(sid)
+                from dataclasses import replace
+                from ria.providers.mock import MockProvider
+                active_settings = replace(settings, xai_model="openai/gpt-oss-20b")
+                provider = create_provider(info.name, active_settings)
+                is_external = info.sends_data_externally
+                bar = st.progress(0.0, text="Finishing analysis with openai/gpt-oss-20b…")
+                run = AnalysisOrchestrator(repo, active_settings, provider).run(
+                    sid, RunOptions(mode, depth, redact=is_external,
+                                    redact_names=is_external, use_cache=True, find_issues=True,
+                                    generate_stories=True, max_tests_per_story=st.session_state["adv_tests"]),
+                    lambda msg, frac: bar.progress(min(max(frac, 0.0), 1.0), text=msg))
+                st.session_state[f"_last_run_{sid}"] = run.run_id
+                st.rerun()
     else:
         demo_tag = " · 🧪 Test / Demo Mode (0 Tokens)" if last.is_demo else ""
         st.success(f"Analysis complete{demo_tag} · {last.created_at:%d %b %H:%M}")
@@ -181,11 +203,21 @@ with st.expander("⚙️ Advanced settings"):
     st.selectbox("AI provider", choices, key="adv_provider",
              format_func=lambda n: infos[n].label if infos[n].configured
              else f"{infos[n].label} – not configured ({', '.join(infos[n].missing)} missing)")
+    if info.name == ProviderName.GROK:
+        groq_models = ["openai/gpt-oss-120b", "openai/gpt-oss-20b"]
+        curr_m = st.session_state.get("adv_model", settings.xai_model)
+        idx = groq_models.index(curr_m) if curr_m in groq_models else 0
+        st.selectbox("Groq Model", groq_models, index=idx, key="adv_model",
+                     help="If openai/gpt-oss-120b daily quota (200k tokens) is exhausted, switch to openai/gpt-oss-20b which has a separate 200,000 token daily quota.")
     st.caption(info.notes + ("" if real else " Configure Grok, Ollama or an OpenAI-compatible endpoint in .env to "
                                              "analyse your own documents."))
     if st.button("Test connection"):
         try:
-            status = create_provider(info.name, settings).health_check()
+            from dataclasses import replace
+            active_settings = settings
+            if info.name == ProviderName.GROK and st.session_state.get("adv_model"):
+                active_settings = replace(settings, xai_model=st.session_state["adv_model"])
+            status = create_provider(info.name, active_settings).health_check()
             (st.success if status.ok else st.error)(status.message)
             log.info("Provider connection test %s: %s", info.name.value, "ok" if status.ok else "failed")
         except ProviderError as exc:
