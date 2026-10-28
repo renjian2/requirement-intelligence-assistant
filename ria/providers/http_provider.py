@@ -141,6 +141,7 @@ class HttpProvider(LLMProvider):
                 except json.JSONDecodeError as exc:
                     raise ProviderError(f"Provider returned non-JSON HTTP body: {_short(resp.text)}") from exc
             body = _short(resp.text)
+            body_l = body.lower()
             if resp.status_code in (401, 403, 404):
                 log.error("%s: fatal HTTP %d", self.name, resp.status_code)
             if resp.status_code in (401, 403):
@@ -149,17 +150,31 @@ class HttpProvider(LLMProvider):
             if resp.status_code == 404:
                 raise FatalProviderError(f"{self.name}: endpoint or model '{self.model}' not found (HTTP 404). "
                                          f"Check the base URL and model name. {body}")
-            if resp.status_code in (400, 413, 422) and any(h in body.lower() for h in _CONTEXT_HINTS):
-                raise ContextTooLongError(f"Input too long for model {self.model}.")
+
+            # Check if this is a TPM (Tokens Per Minute) / rate limit error
+            is_tpm_error = any(k in body_l for k in ("tpm", "tokens per minute", "rate_limit_exceeded"))
             is_rate_limit = (resp.status_code == 429 or resp.status_code >= 500 or
-                             (resp.status_code == 413 and any(k in body.lower() for k in ("tpm", "tokens per minute", "rate_limit_exceeded"))))
+                             (resp.status_code in (400, 413, 422) and is_tpm_error))
+
+            # If it's a TPM limit, check if the single request itself exceeded the total limit:
+            # e.g., "Limit 8000, Requested 9500" -> request can never fit without splitting / chunk reduction
+            m_tpm = re.search(r"limit\s*(\d+).*?requested\s*(\d+)", body_l)
+            if m_tpm:
+                limit_val, req_val = int(m_tpm.group(1)), int(m_tpm.group(2))
+                if req_val > limit_val:
+                    raise ContextTooLongError(f"Request ({req_val} tokens) exceeds provider throughput ceiling ({limit_val} TPM).")
+
+            # True context window error (model context window exceeded, not per-minute rate limit)
+            if not is_rate_limit and resp.status_code in (400, 413, 422) and any(h in body_l for h in _CONTEXT_HINTS):
+                raise ContextTooLongError(f"Input too long for model {self.model}.")
+
             if is_rate_limit:
                 last_error = f"HTTP {resp.status_code}: {body}"
                 if attempt < MAX_RETRIES:
-                    wait = rate_limit_wait(resp) if resp.status_code in (429, 413) else None
+                    wait = rate_limit_wait(resp) if (resp.status_code in (429, 413) or is_tpm_error) else None
                     backoff_s = wait if (wait is not None and wait >= 1.0) else min(2 ** (attempt + 1), 30)
-                    log.warning("%s: HTTP %d, retry %d/%d after %.1f s", self.name, resp.status_code, attempt + 1,
-                                MAX_RETRIES, backoff_s)
+                    log.warning("%s: HTTP %d (rate limit/TPM), retry %d/%d after %.1f s", self.name, resp.status_code,
+                                attempt + 1, MAX_RETRIES, backoff_s)
                     if wait is not None and wait > 90:
                         raise ProviderError(f"{self.name}: rate limit reached – the provider asks to wait "
                                             f"{wait:,.0f}s, usually a daily quota. Try later; cached calls are free.",
@@ -167,7 +182,7 @@ class HttpProvider(LLMProvider):
                     self._sleep(backoff_s)
                     continue
                 hint = " Rate limit / quota reached - wait and re-run (cached calls are free)." \
-                    if resp.status_code in (429, 413) else ""
+                    if (resp.status_code in (429, 413) or is_tpm_error) else ""
                 raise ProviderError(f"{self.name}: {last_error}.{hint}", retryable=True)
             raise ProviderError(f"{self.name}: request rejected (HTTP {resp.status_code}): {body}")
         raise ProviderError(last_error or "Unknown provider error", retryable=True)

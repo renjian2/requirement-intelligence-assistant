@@ -514,6 +514,8 @@ class AnalysisOrchestrator:
                 return
             half = len(seg_ids) // 2
             self.repo.log(ctx.run.session_id, "WARNING", "analysis", f"{chunk_id} too long – splitting in two")
+            with caller._lock:
+                ctx.run.summary.failed_calls = max(0, ctx.run.summary.failed_calls - 1)
             self._extract_chunk(ctx, caller, redactor, system, doc, f"{chunk_id}a", seg_ids[:half], context_ids,
                                 context_block, options, corrections)
             self._extract_chunk(ctx, caller, redactor, system, doc, f"{chunk_id}b", seg_ids[half:],
